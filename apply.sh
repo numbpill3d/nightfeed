@@ -19,7 +19,13 @@ if [[ ${1:-} == --revert ]]; then
     last=$(ls -1d "$BK"/* 2>/dev/null | head -1) || true   # oldest = pre-Nightfeed
     [[ -n ${last:-} ]] || { echo "no backup in $BK" >&2; exit 1; }
     echo "==> Restoring configs from $last"
-    for f in "${FILES[@]}"; do [[ -f $last/$f ]] && install -Dm644 "$last/$f" "$C/$f"; done
+    for f in "${FILES[@]}"; do
+        if [[ -f $last/$f ]]; then
+            install -Dm644 "$last/$f" "$C/$f"
+        elif [[ -f $last/.absent/$f ]]; then
+            rm -f "$C/$f"
+        fi
+    done
     scheme=$(kreadconfig6 --file kdeglobals --group General --key ColorScheme)
     theme=$(kreadconfig6 --file plasmarc --group Theme --key name)
     icons=$(kreadconfig6 --file kdeglobals --group Icons --key Theme)
@@ -56,7 +62,13 @@ gtk-update-icon-cache -q -f -t "$D/icons/Nightfeed" 2>/dev/null || true
 if [[ $(kreadconfig6 --file kdeglobals --group General --key ColorScheme) != Nightfeed ]]; then
     stamp=$BK/$(date +%Y%m%d-%H%M%S)
     echo "==> Backing up current configs to $stamp"
-    for f in "${FILES[@]}"; do [[ -f $C/$f ]] && install -Dm644 "$C/$f" "$stamp/$f"; done
+    for f in "${FILES[@]}"; do
+        if [[ -f $C/$f ]]; then
+            install -Dm644 "$C/$f" "$stamp/$f"
+        else
+            install -Dm644 /dev/null "$stamp/.absent/$f"
+        fi
+    done
 else
     echo "==> Nightfeed already active; keeping the existing backup in $BK"
 fi

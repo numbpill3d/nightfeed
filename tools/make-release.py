@@ -216,7 +216,7 @@ echo "Restart apps to see it." """,
 piece("nightfeed-icons",
       short="Icon theme", title="Nightfeed — Icons", category="Full Icon Themes",
       src=ROOT / "icons/Nightfeed", tar_top="Nightfeed",
-      shots={"icons.jpg": "icons.png"},
+      shots={"icons.jpg": "icons.png", "desktop.jpg": "desktop.png"},
       tags=["icon-theme", "icons", "folders", "tela", "purple-folders"],
       summary="Violet folder and places icons plus a VHS-play launcher icon, layered over Tela circle dark.",
       features="""- Every folder and places icon (home, downloads, music, git, trash and the rest) recoloured to a deep violet with lavender glyphs.
@@ -235,7 +235,7 @@ piece("nightfeed-konsole",
       short="Konsole + kitty colours", title="Nightfeed — Konsole & kitty Colours", category="Konsole color schemes",
       src=ROOT / "terminal", tar_top="nightfeed-konsole",
       files=["Nightfeed.colorscheme", "Nightfeed.profile", "nightfeed-kitty.conf"],
-      shots={"terminal.jpg": "terminal.png"},
+      shots={"terminal.jpg": "terminal.png", "desktop.jpg": "desktop.png"},
       tags=["konsole", "kitty", "terminal", "colorscheme", "terminal-theme"],
       summary="Cobalt-black terminal colours for Konsole and kitty, with a violet cursor and a cool 16-colour palette.",
       features="""- A blue-black background with pale periwinkle text and a violet block cursor.
@@ -303,7 +303,7 @@ CATEGORY: {p['category']}
 VERSION: {VERSION}
 LICENSE: GPL-3.0-or-later
 SOURCE: {GH}/{repo}
-UPLOAD: {p['tar_top']}.tar.gz
+UPLOAD: {repo}.tar.gz
 SCREENSHOTS (in order): {", ".join("screenshots/" + n for n in p["shots"])}
 TAGS: {", ".join(BASE_TAGS + p["tags"])}
 
@@ -362,7 +362,7 @@ def main():
         (k / "screenshots").mkdir(parents=True)
         for n in p["shots"]:
             shutil.copy(d / "screenshots" / n, k / "screenshots" / n)
-        with tarfile.open(k / f"{p['tar_top']}.tar.gz", "w:gz") as t:
+        with tarfile.open(k / f"{repo}.tar.gz", "w:gz") as t:
             if "files" in p:
                 for f in p["files"]:
                     t.add(p["src"] / f, arcname=f"{p['tar_top']}/{f}")
@@ -374,7 +374,7 @@ def main():
     # suite-wide overview in the docs folder
     (DOCS / "README.txt").write_text(
         "Nightfeed — KDE Store upload kit\n\nOne folder per component. Each holds the upload tarball, screenshots/ (upload in the listed order) and STORE-LISTING.txt (name, category, tags, description to paste).\n\n"
-        + "\n".join(f"  {r:22s} {p['category']:28s} {p['tar_top']}.tar.gz" for r, p in PIECES.items())
+        + "\n".join(f"  {r:22s} {p['category']:28s} {r}.tar.gz" for r, p in PIECES.items())
         + f"\n\nSource repos: {GH}/<folder name>   (hub with everything: {GH}/nightfeed)\n")
     shutil.copy(SHOTS / "desktop.png", DOCS / "nightfeed-desktop.png")
 

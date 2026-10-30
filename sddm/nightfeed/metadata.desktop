@@ -1,0 +1,13 @@
+[SddmGreeterTheme]
+Name=Nightfeed
+Description=Night-vision VHS login: cobalt face, scanlines, rolling tracking band, tape grain and tears, violet glow, VCR on-screen display
+Author=splicer scorn (voidrane)
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=1.0
+Screenshot=preview.jpg
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=nightfeed
+Theme-API=2.0
+QtVersion=6

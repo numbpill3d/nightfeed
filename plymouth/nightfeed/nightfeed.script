@@ -1,0 +1,236 @@
+# nightfeed — Plymouth boot splash
+# The wallpaper face as a tape on playback: scanlines + vignette are baked into
+# bg.png; grain frames swap, a tracking band rolls, PLAY blinks, a tape counter
+# runs. Progress is a strip of tape blocks. Everything is pre-rendered
+# (tools/build_plymouth.py). Authored for 1080p, scaled by window height.
+
+Window.SetBackgroundTopColor(0.012, 0.016, 0.039);
+Window.SetBackgroundBottomColor(0.012, 0.016, 0.039);
+
+W = Window.GetWidth();
+H = Window.GetHeight();
+OX = Window.GetX();
+OY = Window.GetY();
+s = H / 1080;
+PX = OX + W * 0.705;          # same column as the SDDM panel
+
+fun load(name) {
+    local.img = Image(name);
+    if (global.s != 1)
+        img = img.Scale(Math.Int(img.GetWidth() * global.s), Math.Int(img.GetHeight() * global.s));
+    return img;
+}
+fun at(img, x, y, z) {
+    local.sp = Sprite(img);
+    sp.SetPosition(x, y, z);
+    return sp;
+}
+fun centered(img, cx, cy, z) {
+    return at(img, cx - img.GetWidth() / 2, cy - img.GetHeight() / 2, z);
+}
+
+halting = 0;
+mode = Plymouth.GetMode();
+if (mode == "shutdown" || mode == "reboot") halting = 1;
+
+# ---- the tape ---------------------------------------------------------------
+# keep the 16:9 picture's height; centre-crop horizontally on wider screens
+bg_image = Image("bg.png");
+bw = Math.Int(bg_image.GetWidth() * H / bg_image.GetHeight());
+bg_image = bg_image.Scale(bw, H);
+bg_sprite = at(bg_image, OX + (W - bw) / 2, OY, -100);
+if (bw < W) bg_sprite.SetX(OX);
+
+for (i = 0; i < 4; i++) noise_image[i] = Image("noise_" + i + ".png").Scale(W, H);
+noise_sprite = at(noise_image[0], OX, OY, -90);
+noise_sprite.SetOpacity(0.55);
+
+band_image = Image("tracking.png").Scale(W, Math.Int(90 * s));
+band_sprite = at(band_image, OX, OY - 120 * s, -80);
+
+# ---- OSD --------------------------------------------------------------------
+M = 44 * s;
+if (halting) {
+    if (mode == "reboot") mode_image = load("osd_rew.png");
+    else mode_image = load("osd_stop.png");
+} else {
+    mode_image = load("osd_play.png");
+}
+mode_sprite = at(mode_image, OX + M, OY + M, 10);
+ch_image = load("osd_ch.png");
+ch_sprite = at(ch_image, OX + M, OY + M + mode_image.GetHeight() - 10 * s, 10);
+
+cnt_image = load("osd_cnt.png");
+cnt_y = OY + H - M - cnt_image.GetHeight();
+cnt_sprite = at(cnt_image, OX + M, cnt_y, 10);
+for (i = 0; i < 10; i++) digit_image[i] = load("d" + i + ".png");
+colon_image = load("dcolon.png");
+dw = digit_image[0].GetWidth() - 22 * s;      # glyph advance (images carry glow padding)
+cw = colon_image.GetWidth() - 22 * s;
+# counter "H:MM:SS" = 7 slots
+cx0 = OX + M + cnt_image.GetWidth() - 6 * s;
+for (i = 0; i < 7; i++) {
+    slot_sprite[i] = Sprite();
+    slot_sprite[i].SetZ(10);
+}
+fun set_counter(sec) {
+    local.h = Math.Int(sec / 3600);
+    local.m = Math.Int(sec / 60) - h * 60;
+    local.ss = sec - Math.Int(sec / 60) * 60;
+    local.d[0] = h; local.d[1] = -1; local.d[2] = Math.Int(m / 10); local.d[3] = m - Math.Int(m / 10) * 10;
+    local.d[4] = -1; local.d[5] = Math.Int(ss / 10); local.d[6] = ss - Math.Int(ss / 10) * 10;
+    local.x = global.cx0;
+    for (i = 0; i < 7; i++) {
+        if (d[i] < 0) {
+            global.slot_sprite[i].SetImage(global.colon_image);
+            global.slot_sprite[i].SetPosition(x, global.cnt_y, 10);
+            x = x + global.cw;
+        } else {
+            global.slot_sprite[i].SetImage(global.digit_image[d[i]]);
+            global.slot_sprite[i].SetPosition(x, global.cnt_y, 10);
+            x = x + global.dw;
+        }
+    }
+}
+set_counter(0);
+
+# ---- logo + progress ----------------------------------------------------------
+logo_y = OY + H * 0.44;
+glow_image = Image("glow.png").Scale(Math.Int(760 * s), Math.Int(380 * s));
+glow_sprite = centered(glow_image, PX, logo_y + 40 * s, 1);
+logo_image = load("logo.png");
+logo_sprite = centered(logo_image, PX, logo_y, 5);
+if (halting) cap_image = load("cap_halt.png");
+else cap_image = load("cap_boot.png");
+cap_sprite = centered(cap_image, PX, logo_y + 62 * s, 5);
+
+bar_y = logo_y + 112 * s;
+dim_image = load("bar_dim.png");
+dim_sprite = centered(dim_image, PX, bar_y, 5);
+lit_image = load("bar_lit.png");
+lit_sprite = Sprite();
+lit_sprite.SetPosition(PX - lit_image.GetWidth() / 2, bar_y - lit_image.GetHeight() / 2, 6);
+
+# ---- passphrase prompt --------------------------------------------------------
+pw_y = bar_y;
+plate_image = load("pw_plate.png");
+plate_sprite = centered(plate_image, PX, pw_y, 20);
+plate_sprite.SetOpacity(0);
+pwcap_image = load("cap_pw.png");
+pwcap_sprite = centered(pwcap_image, PX, pw_y - plate_image.GetHeight() / 2 - 20 * s, 20);
+pwcap_sprite.SetOpacity(0);
+bullet_image = load("bullet.png");
+MAX_BULLETS = 28;
+for (i = 0; i < MAX_BULLETS; i++) {
+    bullet_sprite[i] = Sprite(bullet_image);
+    bullet_sprite[i].SetOpacity(0);
+}
+prompting = 0;
+
+fun show_progress_widgets(a) {
+    dim_sprite.SetOpacity(a);
+    lit_sprite.SetOpacity(a);
+    cap_sprite.SetOpacity(a);
+}
+
+fun password_callback(prompt, bullets) {
+    global.prompting = 1;
+    show_progress_widgets(0);
+    plate_sprite.SetOpacity(1);
+    pwcap_sprite.SetOpacity(1);
+    local.n = bullets;
+    if (n > MAX_BULLETS) n = MAX_BULLETS;
+    local.step = 16 * global.s;
+    local.x0 = global.PX - global.plate_image.GetWidth() / 2 + 22 * global.s;
+    for (i = 0; i < MAX_BULLETS; i++) {
+        if (i < n) {
+            bullet_sprite[i].SetPosition(x0 + i * step, global.pw_y - bullet_image.GetHeight() / 2, 21);
+            bullet_sprite[i].SetOpacity(1);
+        } else {
+            bullet_sprite[i].SetOpacity(0);
+        }
+    }
+}
+
+fun normal_callback() {
+    global.prompting = 0;
+    plate_sprite.SetOpacity(0);
+    pwcap_sprite.SetOpacity(0);
+    for (i = 0; i < MAX_BULLETS; i++) bullet_sprite[i].SetOpacity(0);
+    show_progress_widgets(1);
+}
+
+Plymouth.SetDisplayPasswordFunction(password_callback);
+Plymouth.SetDisplayNormalFunction(normal_callback);
+
+# ---- messages -----------------------------------------------------------------
+message_sprite = Sprite();
+fun message_callback(text) {
+    local.img = Image.Text(text, 0.64, 0.55, 1.0);
+    message_sprite.SetImage(img);
+    message_sprite.SetPosition(global.PX - img.GetWidth() / 2, global.OY + global.H * 0.9, 12);
+}
+Plymouth.SetMessageFunction(message_callback);
+
+# ---- progress -----------------------------------------------------------------
+target = 0;
+shown = 0;
+fun progress_callback(duration, progress) {
+    if (progress > global.target) global.target = progress;
+}
+Plymouth.SetBootProgressFunction(progress_callback);
+
+fun draw_progress(p) {
+    local.w = Math.Int(lit_image.GetWidth() * p);
+    if (w >= 1) lit_sprite.SetImage(lit_image.Crop(0, 0, w, lit_image.GetHeight()));
+}
+
+# ---- animation (50 Hz) --------------------------------------------------------
+tick = 0;
+nf = 0;
+glitch = 0;
+fun refresh_callback() {
+    global.tick = global.tick + 1;
+    local.t = global.tick / 50;
+
+    # grain: new frame every 3 ticks
+    if (global.tick % 3 == 0) {
+        global.nf = (global.nf + 1 + Math.Int(Math.Random() * 2)) % 4;
+        noise_sprite.SetImage(noise_image[global.nf]);
+    }
+    # tracking band rolls top to bottom every ~9 s
+    local.span = global.H + 160 * global.s;
+    band_sprite.SetY(global.OY - 120 * global.s + (global.tick * span / 450) % span);
+
+    # PLAY blinks for the first 5 s, then holds
+    if (global.tick < 250) {
+        if ((global.tick / 25) % 2 < 1) mode_sprite.SetOpacity(1);
+        else mode_sprite.SetOpacity(0.15);
+    } else {
+        mode_sprite.SetOpacity(1);
+    }
+
+    # occasional horizontal jitter of the picture (tape wobble)
+    if (global.glitch > 0) {
+        global.glitch = global.glitch - 1;
+        bg_sprite.SetX(global.OX + (global.W - global.bw) / 2 + (Math.Random() - 0.5) * 14 * global.s);
+        if (global.glitch == 0) bg_sprite.SetX(global.OX + (global.W - global.bw) / 2);
+    } else if (Math.Random() < 0.006) {
+        global.glitch = 6;
+    }
+
+    local.pulse = 0.5 + 0.5 * Math.Sin(t * 1.4);
+    glow_sprite.SetOpacity(0.10 + 0.12 * pulse);
+
+    if (global.tick % 50 == 0) set_counter(Math.Int(t));
+
+    if (global.halting) {
+        if (global.target < 1) global.target = global.target + 0.008;
+    }
+    if (global.shown < global.target) {
+        global.shown = global.shown + (global.target - global.shown) * 0.08 + 0.0005;
+        if (global.shown > 1) global.shown = 1;
+        if (global.prompting == 0) draw_progress(global.shown);
+    }
+}
+Plymouth.SetRefreshFunction(refresh_callback);

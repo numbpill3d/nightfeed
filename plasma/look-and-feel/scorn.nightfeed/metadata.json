@@ -1,0 +1,15 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [ { "Name": "splicer scorn (voidrane)" } ],
+        "Category": "",
+        "Description": "Nightfeed: night-vision VHS. Cobalt-black surfaces, scanlines and tape grain, violet glow highlights.",
+        "Id": "scorn.nightfeed",
+        "License": "GPL-3.0-or-later",
+        "Name": "Nightfeed",
+        "Version": "1.0"
+    },
+    "Keywords": "Desktop;Workspace;Appearance;Look and Feel;Splash;",
+    "X-Plasma-APIVersion": "2",
+    "X-Plasma-MainScript": "defaults"
+}

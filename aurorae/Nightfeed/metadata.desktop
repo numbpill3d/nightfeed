@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Nightfeed
+Comment=Cobalt-black VHS frame: scanline title bar with tape grain, a violet glow seam, violet-glow shadow, VCR transport buttons.
+Type=Service
+X-KDE-ServiceTypes=AuroraeTheme
+X-KDE-Library=aurorae
+X-KDE-Aurorae-Corner-Radius=0
+X-KDE-PluginInfo-Author=splicer scorn (voidrane)
+X-KDE-PluginInfo-Version=1.0
+X-KDE-PluginInfo-License=GPL-3.0-or-later
